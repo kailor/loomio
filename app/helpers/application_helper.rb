@@ -187,4 +187,20 @@ module ApplicationHelper
   def show_loomio_org_marketing
     ENV['SHOW_LOOMIO_ORG_MARKETING']
   end
+
+  def logo_path
+    if ENV['APP_LOGO_PATH']
+      ENV['APP_LOGO_PATH']
+    else
+      if hide_beta_logo?
+        image_url("navbar-logo.png")
+      else
+        image_url("navbar-logo-beta.jpg")
+      end
+    end
+  end
+
+  def hide_beta_logo?
+    current_user_or_visitor.belongs_to_manual_subscription_group?
+  end
 end
