@@ -161,4 +161,21 @@ describe API::DiscussionsController do
     end
   end
 
+  describe 'change_volume' do
+    context 'success' do
+      it 'changes the volume of a discussion reader' do
+        patch :change_volume, id: discussion.key, volume: :mute
+        expect(response.status).to eq 200
+        expect(DiscussionReader.for(user: user, discussion: discussion).volume).to eq :mute
+      end
+    end
+
+    context 'failure' do
+      it 'responds with 422 when the volume is invalid' do
+        patch :change_volume, id: discussion.key, volume: :wark
+        expect(response.status).to eq 422
+      end
+    end
+  end
+
 end

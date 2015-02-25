@@ -4,6 +4,7 @@ FactoryGirl.define do
   end
 
   factory :membership do |m|
+    volume :normal
     m.user { |u| u.association(:user)}
     m.group { |g| g.association(:group)}
   end

@@ -1,4 +1,5 @@
 class DiscussionReader < ActiveRecord::Base
+  include HasVolume
 
   belongs_to :user
   belongs_to :discussion
@@ -19,20 +20,20 @@ class DiscussionReader < ActiveRecord::Base
     end
   end
 
+  def volume
+    super || membership.volume
+  end
+
   def follow!
-    update_attribute(:following, true)
+    change_volume! :email # deprecated, use change_volume! :email directly
   end
 
   def unfollow!
-    update_attribute(:following, false)
+    change_volume! :normal # deprecated, use change_volume! :normal directly
   end
 
   def following?
-    if self[:following].nil?
-      membership.try(:following_by_default)
-    else
-      self[:following]
-    end
+    volume.email? # deprecated, use self.volume.email? directly
   end
 
   def first_read?

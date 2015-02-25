@@ -53,9 +53,9 @@ class Queries::VisibleDiscussions < Delegator
 
   def following
     join_to_discussion_readers
-    followed_group_ids = @user.memberships.where(following_by_default: true).pluck(:group_id)
-    @relation = @relation.where('(dv.following = :true) OR (dv.following IS NULL and discussions.group_id IN (:followed_group_ids))',
-                                {true: true, followed_group_ids: followed_group_ids})
+    followed_group_ids = @user.memberships.where(volume: :email).pluck(:group_id)
+    @relation = @relation.where('(dv.volume = :email) OR (dv.volume IS NULL and discussions.group_id IN (:followed_group_ids))',
+                                {followed_group_ids: followed_group_ids, email: DiscussionReader.volumes[:email] })
 
     discussion_newer_than_membership
     self

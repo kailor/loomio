@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150223201536) do
+ActiveRecord::Schema.define(version: 20150224022118) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -187,8 +187,8 @@ ActiveRecord::Schema.define(version: 20150223201536) do
     t.datetime "last_read_at"
     t.integer  "read_comments_count"
     t.integer  "read_items_count",      default: 0, null: false
-    t.boolean  "following"
     t.integer  "last_read_sequence_id", default: 0, null: false
+    t.integer  "volume"
   end
 
   add_index "discussion_readers", ["discussion_id"], name: "index_motion_read_logs_on_discussion_id", using: :btree
@@ -415,7 +415,7 @@ ActiveRecord::Schema.define(version: 20150223201536) do
     t.integer  "inbox_position",                      default: 0
     t.boolean  "admin",                               default: false, null: false
     t.boolean  "is_suspended",                        default: false, null: false
-    t.boolean  "following_by_default",                default: false, null: false
+    t.integer  "volume",                              default: 1
   end
 
   add_index "memberships", ["group_id"], name: "index_memberships_on_group_id", using: :btree

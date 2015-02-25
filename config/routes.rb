@@ -42,6 +42,7 @@ Loomio::Application.routes.draw do
 
     resources :discussions, only: [:show, :index, :create, :update, :destroy] do
       get :inbox, on: :collection
+      patch :change_volume, on: :member
       patch :mark_as_read, on: :member
     end
 
