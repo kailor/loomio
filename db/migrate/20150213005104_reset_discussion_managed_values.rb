@@ -8,7 +8,7 @@ class ResetDiscussionManagedValues < ActiveRecord::Migration
   def change
     raise "migration does not work" if Event.where('discussion_id is not null').where('sequence_id is null').any?
 
-    puts "Resetting items_count, comments_count for all discussions"
+    puts "Resetting items_count, salient_items_count, comments_count for all discussions"
     bar = create_progress_bar(Discussion.count)
     Discussion.find_each do |discussion|
       bar.increment

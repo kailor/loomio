@@ -4,7 +4,7 @@
       .col-xs-2.col-sm-1
         .icon.discussion-icon
           %span.activity-badge.unread-comments-count{title: t(:'tooltip.unread_comments')}
-            =@discussion_reader_cache.get_for(item).unread_comments_count
+            =@discussion_reader_cache.get_for(item).unread_activity_count
 
       .col-xs-8.col-sm-7.title
         = item.title

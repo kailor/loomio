@@ -23,7 +23,6 @@ class API::DiscussionsController < API::RestfulController
   end
 
   def change_volume
-    binding.pry
     discussion_reader.set_volume! params[:volume]
     respond_with_discussion
   end

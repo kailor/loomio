@@ -3,8 +3,6 @@ require 'rails_helper'
 describe Discussion do
   let(:discussion) { create :discussion }
 
-  it_behaves_like Searchable
-
   describe ".followers" do
     let(:follower) { FactoryGirl.create(:user) }
     let(:unfollower) { FactoryGirl.create(:user) }
@@ -189,17 +187,6 @@ describe Discussion do
     end
   end
 
-  describe "#viewed!" do
-    before do
-      @discussion = create :discussion
-    end
-    it "increases the total_views by 1" do
-      expect(@discussion.total_views).to eq 0
-      @discussion.viewed!
-      expect(@discussion.total_views).to eq 1
-    end
-  end
-
   describe "#delayed_destroy" do
     it 'sets deleted_at before calling destroy and then destroys everything' do
       @motion = create(:motion, discussion: discussion)
@@ -281,8 +268,10 @@ describe Discussion do
       it "has the right values to begin with" do
         expect(discussion.items_count).to be 0
         expect(discussion.comments_count).to be 0
+        expect(discussion.salient_items_count).to be 0
         expect(discussion.last_item_at).to be nil
         expect(discussion.last_comment_at).to be nil
+        expect(discussion.last_activity_at).to eq discussion.created_at
         expect(discussion.first_sequence_id).to be 0
         expect(discussion.last_sequence_id).to be 0
       end
@@ -295,14 +284,18 @@ describe Discussion do
       before do
         @comment = build(:comment, discussion: discussion)
         @event = CommentService.create(comment: @comment, actor: discussion.author)
+        @event.reload
+        @comment.reload
         discussion.reload
       end
 
       it "increments corrently" do
         expect(discussion.items_count).to be 1
         expect(discussion.comments_count).to be 1
+        expect(discussion.salient_items_count).to be 1
         expect(discussion.last_item_at).to eq @comment.created_at
         expect(discussion.last_comment_at).to eq @comment.created_at
+        expect(discussion.last_activity_at).to eq @comment.created_at
         expect(discussion.first_sequence_id).to be @event.sequence_id
         expect(discussion.last_sequence_id).to be @event.sequence_id
       end
@@ -312,6 +305,7 @@ describe Discussion do
       before do
         @comment = build(:comment, discussion: discussion)
         @event = CommentService.create(comment: @comment, actor: discussion.author)
+        @event.reload
         discussion.reload
         @comment.reload
         @comment.destroy
@@ -321,9 +315,10 @@ describe Discussion do
       it "decrements correctly", focus: true do
         expect(discussion.items_count).to be 0
         expect(discussion.comments_count).to be 0
+        expect(discussion.salient_items_count).to be 0
         expect(discussion.last_item_at).to eq nil
-        p discussion.comments.all
         expect(discussion.last_comment_at).to eq nil
+        expect(discussion.last_activity_at).to eq discussion.created_at
         expect(discussion.last_sequence_id).to be 0
         expect(discussion.first_sequence_id).to be 0
         expect(discussion.last_sequence_id).to be 0
@@ -338,6 +333,8 @@ describe Discussion do
         @comment2 = build(:comment, discussion: discussion)
         @event2 = CommentService.create(comment: @comment2, actor: discussion.author)
 
+        @event1.reload
+        @event2.reload
         discussion.reload
         @comment1.reload
         @comment2.reload
@@ -349,8 +346,10 @@ describe Discussion do
       it "decrements correctly" do
         expect(discussion.items_count).to be 1
         expect(discussion.comments_count).to be 1
+        expect(discussion.salient_items_count).to be 1
         expect(discussion.last_item_at).to eq @comment2.created_at
         expect(discussion.last_comment_at).to eq @comment2.created_at
+        expect(discussion.last_activity_at).to eq @comment2.created_at
         expect(discussion.first_sequence_id).to be @event2.sequence_id
         expect(discussion.last_sequence_id).to be @event2.sequence_id
       end
@@ -364,6 +363,8 @@ describe Discussion do
         @comment2 = build(:comment, discussion: discussion)
         @event2 = CommentService.create(comment: @comment2, actor: discussion.author)
 
+        @event1.reload
+        @event2.reload
         discussion.reload
         @comment1.reload
         @comment2.reload
@@ -380,8 +381,10 @@ describe Discussion do
       it "decrements correctly" do
         expect(discussion.items_count).to be 1
         expect(discussion.comments_count).to be 1
+        expect(discussion.salient_items_count).to be 1
         expect(discussion.last_item_at).to eq @comment1.created_at
         expect(discussion.last_comment_at).to eq @comment1.created_at
+        expect(discussion.last_activity_at).to eq @comment1.created_at
         expect(discussion.first_sequence_id).to be @event1.sequence_id
         expect(discussion.last_sequence_id).to be @event1.sequence_id
       end

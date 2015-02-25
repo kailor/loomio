@@ -36,9 +36,7 @@ class Queries::VisibleDiscussions < Delegator
 
   def unread
     join_to_discussion_readers
-    @relation = @relation.where('dv.last_read_at IS NULL OR
-                                 (discussions.last_item_at IS NOT NULL AND (dv.last_read_at < discussions.last_item_at))')
-    discussion_newer_than_membership
+    @relation = @relation.where('dv.last_read_at IS NULL OR (dv.last_read_at < discussions.last_activity_at)')
     self
   end
 

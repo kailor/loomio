@@ -1,11 +1,10 @@
 class Discussion < ActiveRecord::Base
-
   PER_PAGE = 50
+  SALIENT_ITEM_KINDS = %w[new_comment new_motion new_vote motion_outcome_created]
   paginates_per PER_PAGE
 
   include ReadableUnguessableUrls
   include Translatable
-  include Searchable
 
   scope :archived, -> { where('archived_at is not null') }
   scope :published, -> { where(archived_at: nil, is_deleted: false) }
@@ -45,7 +44,9 @@ class Discussion < ActiveRecord::Base
   has_many :commenters, -> { uniq }, through: :comments, source: :user
 
   has_many :events, -> { includes :user }, as: :eventable, dependent: :destroy
-  has_many :items, -> { includes(eventable: :user).order(created_at: :asc) }, class_name: 'Event'
+
+  has_many :items, -> { includes(eventable: :user).order('created_at ASC') }, class_name: 'Event'
+  has_many :salient_items, -> { includes(eventable: :user).where(kind: SALIENT_ITEM_KINDS).order('created_at ASC') }, class_name: 'Event'
 
   has_many :discussion_readers
 
@@ -65,6 +66,8 @@ class Discussion < ActiveRecord::Base
   delegate :email, to: :author, prefix: :author
   delegate :name_and_email, to: :author, prefix: :author
   delegate :locale, to: :author
+
+  after_create :set_last_activity_at_to_created_at
 
   def published_at
     created_at
@@ -107,10 +110,6 @@ class Discussion < ActiveRecord::Base
 
   def group_members_without_discussion_author
     group.users.where(User.arel_table[:id].not_eq(author_id))
-  end
-
-  def current_motion_closing_at
-    current_motion.closing_at
   end
 
   alias_method :current_proposal, :current_motion
@@ -223,6 +222,9 @@ class Discussion < ActiveRecord::Base
   end
 
   private
+  def set_last_activity_at_to_created_at
+    update_attribute(:last_activity_at, created_at)
+  end
 
   def sequence_id_or_0(item)
     item.try(:sequence_id) || 0

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150224022118) do
+ActiveRecord::Schema.define(version: 20150225033812) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -64,7 +64,7 @@ ActiveRecord::Schema.define(version: 20150224022118) do
   add_index "attachments", ["comment_id"], name: "index_attachments_on_comment_id", using: :btree
 
   create_table "blacklisted_passwords", force: :cascade do |t|
-    t.string   "string"
+    t.string   "string",     limit: 255
     t.datetime "created_at"
     t.datetime "updated_at"
   end
@@ -94,13 +94,6 @@ ActiveRecord::Schema.define(version: 20150224022118) do
 
   add_index "comment_hierarchies", ["ancestor_id", "descendant_id", "generations"], name: "tag_anc_desc_udx", unique: true, using: :btree
   add_index "comment_hierarchies", ["descendant_id"], name: "tag_desc_idx", using: :btree
-
-  create_table "comment_search_vectors", force: :cascade do |t|
-    t.integer  "comment_id"
-    t.tsvector "search_vector"
-  end
-
-  add_index "comment_search_vectors", ["search_vector"], name: "comment_search_vector_index", using: :gin
 
   create_table "comment_votes", force: :cascade do |t|
     t.integer  "comment_id"
@@ -185,10 +178,12 @@ ActiveRecord::Schema.define(version: 20150224022118) do
     t.datetime "updated_at"
     t.integer  "discussion_id"
     t.datetime "last_read_at"
-    t.integer  "read_comments_count"
-    t.integer  "read_items_count",      default: 0, null: false
-    t.integer  "last_read_sequence_id", default: 0, null: false
     t.integer  "volume"
+    t.integer  "read_comments_count",      default: 0, null: false
+    t.integer  "read_items_count",         default: 0, null: false
+    t.boolean  "following"
+    t.integer  "last_read_sequence_id",    default: 0, null: false
+    t.integer  "read_salient_items_count", default: 0, null: false
   end
 
   add_index "discussion_readers", ["discussion_id"], name: "index_motion_read_logs_on_discussion_id", using: :btree
@@ -207,21 +202,23 @@ ActiveRecord::Schema.define(version: 20150224022118) do
     t.integer  "author_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "title",             limit: 255
+    t.string   "title",               limit: 255
     t.datetime "last_comment_at"
     t.text     "description"
-    t.boolean  "uses_markdown",                 default: false, null: false
-    t.boolean  "is_deleted",                    default: false, null: false
-    t.integer  "comments_count",                default: 0,     null: false
-    t.integer  "items_count",                   default: 0,     null: false
+    t.boolean  "uses_markdown",                   default: false, null: false
+    t.boolean  "is_deleted",                      default: false, null: false
+    t.integer  "comments_count",                  default: 0,     null: false
+    t.integer  "items_count",                     default: 0,     null: false
     t.datetime "archived_at"
     t.boolean  "private"
-    t.string   "key",               limit: 255
-    t.string   "iframe_src",        limit: 255
+    t.string   "key",                 limit: 255
+    t.string   "iframe_src",          limit: 255
+    t.datetime "last_activity_at"
+    t.integer  "motions_count",                   default: 0
+    t.integer  "last_sequence_id",                default: 0,     null: false
+    t.integer  "first_sequence_id",               default: 0,     null: false
     t.datetime "last_item_at"
-    t.integer  "motions_count",                 default: 0
-    t.integer  "last_sequence_id",              default: 0,     null: false
-    t.integer  "first_sequence_id",             default: 0,     null: false
+    t.integer  "salient_items_count",             default: 0,     null: false
   end
 
   add_index "discussions", ["author_id"], name: "index_discussions_on_author_id", using: :btree
@@ -433,13 +430,6 @@ ActiveRecord::Schema.define(version: 20150224022118) do
   end
 
   add_index "motion_readers", ["user_id", "motion_id"], name: "index_motion_readers_on_user_id_and_motion_id", using: :btree
-
-  create_table "motion_search_vectors", force: :cascade do |t|
-    t.integer  "motion_id"
-    t.tsvector "search_vector"
-  end
-
-  add_index "motion_search_vectors", ["search_vector"], name: "motion_search_vector_index", using: :gin
 
   create_table "motions", force: :cascade do |t|
     t.string   "name",                limit: 255

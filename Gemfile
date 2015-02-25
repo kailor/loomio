@@ -71,6 +71,7 @@ gem 'responders', '~> 2.0'
 #gem 'oj_mimic_json'
 
 group :development, :test do
+  gem 'byebug'
   gem 'minitest'
   gem 'timecop'
   gem 'pry-rails'
