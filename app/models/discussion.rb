@@ -9,10 +9,9 @@ class Discussion < ActiveRecord::Base
   scope :archived, -> { where('archived_at is not null') }
   scope :published, -> { where(archived_at: nil, is_deleted: false) }
 
-  scope :active_since, -> (time) { where('last_item_at > ?', time) }
-  scope :last_comment_after, -> (time) { where('(last_comment_at IS NULL and discussions.created_at > :time) OR last_comment_at > :time', time: time) }
-  scope :order_by_latest_activity, -> { order('CASE WHEN last_comment_at IS NULL THEN discussions.created_at ELSE last_comment_at END DESC') }
-  scope :order_by_closing_soon_then_latest_activity, -> { order('motions.closing_at ASC, CASE WHEN last_comment_at IS NULL THEN discussions.created_at ELSE last_comment_at END DESC') }
+  scope :last_activity_after, -> (time) { where('last_activity_at > ?', time) }
+  scope :order_by_latest_activity, -> { order('discussions.last_activity_at DESC') }
+  scope :order_by_closing_soon_then_latest_activity, -> { order('motions.closing_at ASC, discussions.last_activity_at DESC') }
 
   scope :visible_to_public, -> { published.where(private: false) }
   scope :not_visible_to_public, -> { where(private: true) }
@@ -114,10 +113,6 @@ class Discussion < ActiveRecord::Base
 
   alias_method :current_proposal, :current_motion
 
-  def number_of_comments_since(time)
-    comments.where('comments.created_at > ?', time).count
-  end
-
   def participants
     participants = group.members.where(id: commenters.pluck(:id))
     participants << author
@@ -150,59 +145,61 @@ class Discussion < ActiveRecord::Base
     self.delay.destroy
   end
 
-
   def thread_item_created!(item)
-    #update count and last_item_at
     self.items_count += 1
     self.last_item_at = item.created_at
 
-    # update first and last sequence ids
+    if SALIENT_ITEM_KINDS.include? item.kind
+      self.salient_items_count += 1
+      self.last_activity_at = item.created_at
+    end
+
+    if item.kind == 'new_comment'
+      self.comments_count += 1
+      self.last_comment_at = item.created_at
+    end
+
     if self.first_sequence_id == 0
       self.first_sequence_id = item.sequence_id
     end
+
     self.last_sequence_id = item.sequence_id
 
-    self.save!(validate: false)
+    save!(validate: false)
   end
 
-  def thread_item_destroyed!(destroyed_item)
+  def thread_item_destroyed!(item)
     self.items_count -= 1
+    self.salient_items_count -= 1 if SALIENT_ITEM_KINDS.include? item.kind
 
-    if destroyed_item.sequence_id == first_sequence_id
+    if item.sequence_id == first_sequence_id
       self.first_sequence_id = sequence_id_or_0(items.sequenced.first)
     end
 
-    if destroyed_item.sequence_id == last_sequence_id
+    if item.sequence_id == last_sequence_id
       last_item = items.sequenced.last
       self.last_sequence_id = sequence_id_or_0(last_item)
       self.last_item_at = last_item.try(:created_at)
+      self.last_activity_at = salient_items.last.try(:created_at) || created_at
     end
 
-    self.save!(validate: false)
+    save!(validate: false)
 
     discussion_readers.
-      where('last_read_at <= ?', destroyed_item.created_at).
-      each(&:reset_items_count!)
+      where('last_read_at <= ?', item.created_at).
+      each(&:reset_non_comment_counts!)
 
     true
   end
 
-  def comment_created!(comment)
-    self.comments_count += 1
-    self.last_comment_at = comment.created_at
-
-    self.save!(validate: false)
-  end
-
-  def comment_destroyed!(destroyed_comment)
+  def comment_destroyed!(comment)
     self.comments_count -= 1
     self.last_comment_at = comments.maximum(:created_at)
 
-    self.save!(validate: false)
-
+    save!(validate: false)
     discussion_readers.
-      where('last_read_at <= ?', destroyed_comment.created_at).
-      each(&:reset_comments_count!)
+      where('last_read_at <= ?', comment.created_at).
+      each(&:reset_comment_counts!)
   end
 
   def public?
@@ -213,12 +210,6 @@ class Discussion < ActiveRecord::Base
     if self[:private].nil? and group.present?
       self[:private] = group.discussion_private_default
     end
-  end
-
-  def last_activity_at
-    [created_at,
-     last_comment_at,
-     current_motion.try(:last_vote_at)].compact.max
   end
 
   private

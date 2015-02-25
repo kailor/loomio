@@ -28,7 +28,6 @@ class API::DiscussionsController < API::RestfulController
   end
 
   def mark_as_read
-    # expect sequence id or just
     event = Event.where(discussion_id: @discussion.id, sequence_id: params[:sequence_id]).first
     discussion_reader.viewed! (event || @discussion).created_at
     respond_with_discussion
@@ -37,17 +36,13 @@ class API::DiscussionsController < API::RestfulController
   private
 
   def respond_with_discussion
-    discussion_wrapper = DiscussionWrapper.new(user: current_user,
-                                               discussion: @discussion)
-    render json: discussion_wrapper,
+    render json: DiscussionWrapper.new(user: current_user, discussion: @discussion),
            serializer: DiscussionWrapperSerializer,
            root: 'discussion_wrappers'
   end
 
   def respond_with_discussions
-    discussion_wrappers = DiscussionWrapper.new_collection(user: current_user,
-                                                           discussions: @discussions)
-    render json: discussion_wrappers,
+    render json: DiscussionWrapper.new_collection(user: current_user, discussions: @discussions),
            each_serializer: DiscussionWrapperSerializer,
            root: 'discussion_wrappers'
   end

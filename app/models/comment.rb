@@ -22,7 +22,6 @@ class Comment < ActiveRecord::Base
 
   after_initialize :set_defaults
   after_destroy :call_comment_destroyed
-  after_create  :call_comment_created
 
   default_scope { includes(:user).includes(:attachments).includes(:discussion) }
 
@@ -134,10 +133,6 @@ class Comment < ActiveRecord::Base
   end
 
   private
-  def call_comment_created
-    discussion.comment_created!(self)
-  end
-
   def call_comment_destroyed
     discussion.comment_destroyed!(self)
   end
